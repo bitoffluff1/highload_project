@@ -1,0 +1,122 @@
+Конфигурация docker-compose.yml
+version: '3'
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - 80:80
+    volumes:
+      - ./src:/usr/share/nginx/html
+
+D:\GeekBrains\др\highload>docker-compose up --build
+Creating network "highload_default" with the default driver
+Pulling web (nginx:latest)...
+latest: Pulling from library/nginx
+bf5952930446: Pull complete
+cb9a6de05e5a: Pull complete
+9513ea0afb93: Pull complete
+b49ea07d2e93: Pull complete
+a5e4a503d449: Pull complete
+Digest: sha256:b0ad43f7ee5edbc0effbc14645ae7055e21bc1973aee5150745632a24a752661
+Status: Downloaded newer image for nginx:latest
+Creating highload_web_1 ... done
+Attaching to highload_web_1
+web_1  | /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
+web_1  | /docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
+web_1  | /docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
+web_1  | 10-listen-on-ipv6-by-default.sh: Getting the checksum of /etc/nginx/conf.d/default.conf
+web_1  | 10-listen-on-ipv6-by-default.sh: Enabled listen on IPv6 in /etc/nginx/conf.d/default.conf
+web_1  | /docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
+web_1  | /docker-entrypoint.sh: Configuration complete; ready for start up
+web_1  | 172.18.0.1 - - [20/Aug/2020:09:50:09 +0000] "GET / HTTP/1.1" 200 147 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" "-"
+web_1  | 172.18.0.1 - - [20/Aug/2020:09:50:11 +0000] "GET /favicon.ico HTTP/1.1" 404 555 "http://localhost/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36" "-"
+web_1  | 2020/08/20 09:50:11 [error] 28#28: *1 open() "/usr/share/nginx/html/favicon.ico" failed (2: No such file or directory), client: 172.18.0.1, server: localhost, request: "GET /favicon.ico HTTP/1.1", host: "localhost", referre
+r: "http://localhost/"
+
+D:\GeekBrains\др\highload>docker ps
+CONTAINER ID        IMAGE               COMMAND                  CREATED              STATUS              PORTS                NAMES
+e64a2de17864        nginx:latest        "/docker-entrypoint.…"   About a minute ago   Up About a minute   0.0.0.0:80->80/tcp   highload_web_1
+
+_________________________
+Конфигурация docker-compose.yml
+version: '3'
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - 80:80
+    volumes:
+      - ./src:/usr/share/nginx/html
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - php
+  php:
+    image: php:7.4-fpm
+    volumes:
+      - ./src:/usr/share/nginx/html
+
+
+Конфигурация nginx.conf
+worker_processes  1;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+
+    server {
+        root   /usr/share/nginx/html;
+        listen       80;
+        server_name  localhost;
+
+        location / {
+            index  index.php index.htm;
+        }
+
+        location ~ \.php$ {
+            fastcgi_pass   php:9000;
+            fastcgi_index  index.php;
+            include fastcgi_params;
+            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+            fastcgi_param PATH_INFO $fastcgi_path_info;
+        }
+    }
+}
+
+D:\GeekBrains\др\highload>docker-compose up --build
+Pulling php (php:7.4-fpm)...
+7.4-fpm: Pulling from library/php
+bf5952930446: Already exists
+a409b57eb464: Pull complete
+3192e6c84ad0: Pull complete
+43553740162b: Pull complete
+2347e30b161b: Pull complete
+58e80c1bf058: Pull complete
+17bb4ff8bb27: Pull complete
+6db2e7f44747: Pull complete
+8941c95954c0: Pull complete
+ee0267baff3c: Pull complete
+Digest: sha256:c3ad9e770224eecf05497e611d9b77041b1ed2e72fa1e103d46c71254c128f76
+Status: Downloaded newer image for php:7.4-fpm
+Creating highload_php_1 ... done
+Recreating highload_web_1 ... done
+Attaching to highload_php_1, highload_web_1
+php_1  | [20-Aug-2020 09:56:17] NOTICE: fpm is running, pid 1
+php_1  | [20-Aug-2020 09:56:17] NOTICE: ready to handle connections
+web_1  | /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
+web_1  | /docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
+web_1  | /docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
+web_1  | 10-listen-on-ipv6-by-default.sh: Getting the checksum of /etc/nginx/conf.d/default.conf
+web_1  | 10-listen-on-ipv6-by-default.sh: Enabled listen on IPv6 in /etc/nginx/conf.d/default.conf
+web_1  | /docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
+web_1  | /docker-entrypoint.sh: Configuration complete; ready for start up
+
+D:\GeekBrains\др\highload>docker ps
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                NAMES
+a0fe9008bed1        nginx:latest        "/docker-entrypoint.…"   6 seconds ago       Up 6 seconds        0.0.0.0:80->80/tcp   highload_web_1
+455b5c37c599        php:7.4-fpm         "docker-php-entrypoi…"   10 seconds ago      Up 9 seconds        9000/tcp             highload_php_1
