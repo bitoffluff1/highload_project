@@ -10,6 +10,16 @@ services:
     depends_on:
       - php
   php:
-    image: php:7.4-fpm
+    build:
+      ./php
     volumes:
       - ./src:/usr/share/nginx/html
+      - ./php/php.ini:/usr/local/etc/php/php.ini
+    depends_on:
+      - db
+  db:
+    image: mariadb
+    volumes:
+      - ./mariadb:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: example
