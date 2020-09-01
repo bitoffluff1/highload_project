@@ -19,7 +19,17 @@ services:
       - db
   db:
     image: mariadb
+    container_name: db-master
     volumes:
-      - ./mariadb:/var/lib/mysql
+      - ./mariadbMaster:/var/lib/mysql
     environment:
-      MYSQL_ROOT_PASSWORD: example
+      MYSQL_ROOT_PASSWORD: qwerty
+  dbSlave:
+    image: mariadb
+    container_name: db-slave
+    volumes:
+      - ./mariadbSlave:/var/lib/mysql
+    depends_on:
+      - db
+    environment:
+      MYSQL_ROOT_PASSWORD: qwerty

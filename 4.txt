@@ -1,0 +1,216 @@
+1. Собрать две виртуальные машины с установленным MySQL-сервером.
+    Добавила контейнер dbSlave
+
+2. Развернуть репликацию на этих двух серверах.
+
+D:\GeekBrains\др\highload_project>docker exec -it db-master bash
+
+apt-get update
+apt-get install vim -y
+
+root@4bf2f87ae314:/# vim etc/mysql/conf.d/docker.cnf
+
+server-id = 1
+log_bin = /var/log/mysql/mysql-bin.log
+binlog_do_db = test
+binlog_format = ROW
+
+D:\GeekBrains\др\highload_project>docker-compose restart
+Restarting db-slave               ... done
+Restarting highload_project_web_1 ... done
+Restarting highload_project_php_1 ... done
+Restarting db-master              ... done
+
+D:\GeekBrains\др\highload_project>docker exec -it db-master bash
+root@4bf2f87ae314:/# mysql -uroot -pqwerty
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 4
+Server version: 10.5.5-MariaDB-1:10.5.5+maria~focal-log mariadb.org binary distribution
+
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+MariaDB [(none)]> GRANT REPLICATION SLAVE ON *.* TO 'slave_user'@'%' IDENTIFIED BY 'password';
+Query OK, 0 rows affected (0.003 sec)
+
+MariaDB [(none)]> FLUSH PRIVILEGES;
+Query OK, 0 rows affected (0.002 sec)
+
+MariaDB [test]> SHOW MASTER STATUS;
++------------------+----------+--------------+------------------+
+| File             | Position | Binlog_Do_DB | Binlog_Ignore_DB |
++------------------+----------+--------------+------------------+
+| mysql-bin.000004 |   395685 | test         |                  |
++------------------+----------+--------------+------------------+
+1 row in set (0.000 sec)
+
+
+MariaDB [(none)]> CREATE DATABASE IF NOT EXISTS test;
+Query OK, 1 row affected (0.009 sec)
+
+MariaDB [(none)]> exit;
+
+root@4bf2f87ae314:/# mysql -uroot -pqwerty test < /var/lib/mysql/db/explain_models.sql;
+
+MariaDB [(none)]> show databases;
++--------------------+
+| Database           |
++--------------------+
+| db                 |
+| information_schema |
+| mysql              |
+| performance_schema |
+| test               |
++--------------------+
+5 rows in set (0.006 sec)
+
+MariaDB [(none)]> use test;
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
+Database changed
+MariaDB [test]> show tables;
++-----------------+
+| Tables_in_test  |
++-----------------+
+| customers       |
+| employees       |
+| offices         |
+| orderdetails    |
+| orders          |
+| payments        |
+| productlines    |
+| productvariants |
++-----------------+
+9 rows in set (0.002 sec)
+
+MariaDB [test]> drop table orders;
+Query OK, 0 rows affected (0.014 sec)
+
+__________________________________________
+
+SLAVE
+
+
+D:\GeekBrains\др\highload_project>docker exec -it db-slave bash
+root@83463517ef54:/# mysql -uroot -pqwerty
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 18
+Server version: 10.5.5-MariaDB-1:10.5.5+maria~focal-log mariadb.org binary distribution
+
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+MariaDB [(none)]> CREATE DATABASE IF NOT EXISTS test;
+Query OK, 1 row affected (0.009 sec)
+
+MariaDB [(none)]> exit;
+Bye
+
+root@83463517ef54:/# mysql -uroot -pqwerty test < /var/lib/mysql/db/explain_models.sql;
+
+root@83463517ef54:/# vim etc/mysql/conf.d/docker.cnf
+
+server-id = 2
+log_bin = /var/log/mysql/mysql-bin.log
+binlog_do_db = test
+relay-log = /var/log/mysql/mysql-relay-bin.log
+
+D:\GeekBrains\др\highload_project>docker exec -it db-slave bash
+root@83463517ef54:/# mysql -uroot -pqwerty
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 4
+Server version: 10.5.5-MariaDB-1:10.5.5+maria~focal-log mariadb.org binary distribution
+
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+D:\GeekBrains\др\highload_project>docker inspect -f "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" db-master
+172.19.0.5
+
+MariaDB [(none)]> CHANGE MASTER TO MASTER_HOST='172.19.0.5', MASTER_USER='slave_user', MASTER_PASSWORD='password', MASTER_LOG_FILE = 'mysql-bin.000004', MASTER_LOG_POS = 395685;
+Query OK, 0 rows affected (0.047 sec)
+
+MariaDB [(none)]> START SLAVE;
+Query OK, 0 rows affected (0.001 sec)
+
+MariaDB [test]> show slave status \G
+*************************** 1. row ***************************
+                Slave_IO_State: Waiting for master to send event
+                   Master_Host: 172.19.0.5
+                   Master_User: slave_user
+                   Master_Port: 3306
+                 Connect_Retry: 60
+               Master_Log_File: mysql-bin.000004
+           Read_Master_Log_Pos: 395839
+                Relay_Log_File: mysql-relay-bin.000002
+                 Relay_Log_Pos: 709
+         Relay_Master_Log_File: mysql-bin.000004
+              Slave_IO_Running: Yes
+             Slave_SQL_Running: Yes
+               Replicate_Do_DB:
+           Replicate_Ignore_DB:
+            Replicate_Do_Table:
+        Replicate_Ignore_Table:
+       Replicate_Wild_Do_Table:
+   Replicate_Wild_Ignore_Table:
+                    Last_Errno: 0
+                    Last_Error:
+                  Skip_Counter: 0
+           Exec_Master_Log_Pos: 395839
+               Relay_Log_Space: 1018
+               Until_Condition: None
+                Until_Log_File:
+                 Until_Log_Pos: 0
+            Master_SSL_Allowed: No
+            Master_SSL_CA_File:
+            Master_SSL_CA_Path:
+               Master_SSL_Cert:
+             Master_SSL_Cipher:
+                Master_SSL_Key:
+         Seconds_Behind_Master: 0
+ Master_SSL_Verify_Server_Cert: No
+                 Last_IO_Errno: 0
+                 Last_IO_Error:
+                Last_SQL_Errno: 0
+                Last_SQL_Error:
+   Replicate_Ignore_Server_Ids:
+              Master_Server_Id: 1
+                Master_SSL_Crl:
+            Master_SSL_Crlpath:
+                    Using_Gtid: No
+                   Gtid_IO_Pos:
+       Replicate_Do_Domain_Ids:
+   Replicate_Ignore_Domain_Ids:
+                 Parallel_Mode: optimistic
+                     SQL_Delay: 0
+           SQL_Remaining_Delay: NULL
+       Slave_SQL_Running_State: Slave has read all relay log; waiting for more updates
+              Slave_DDL_Groups: 1
+Slave_Non_Transactional_Groups: 0
+    Slave_Transactional_Groups: 0
+1 row in set (0.000 sec)
+
+MariaDB [(none)]> use test;
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
+Database changed
+
+MariaDB [test]> show tables;
++-----------------+
+| Tables_in_test  |
++-----------------+
+| customers       |
+| employees       |
+| offices         |
+| orderdetails    |
+| payments        |
+| productlines    |
+| products        |
+| productvariants |
++-----------------+
+8 rows in set (0.009 sec)
