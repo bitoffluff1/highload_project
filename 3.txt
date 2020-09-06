@@ -1,0 +1,51 @@
+1. Установить выбранный форк MySQL Server.
+Установила mariadb. Работает.
+
+2. Портировать в него текущую структуру таблиц.
+Зашла в конейнер
+docker exec -it highload_project_db_1 bash
+
+Зашла в бд
+mysql -uroot -pexample;
+
+Создала базу данных
+CREATE DATABASE IF NOT EXISTS high_project;
+
+Импортировала бд
+mysql -uroot -pexample  high_project  < /var/lib/mysql/db/explain_models.sql;
+mysql -uroot -pexample  high_project  < /var/lib/mysql/db/explain_models_patch_1.sql;
+mysql -uroot -pexample  high_project  < /var/lib/mysql/db/explain_models_patch_2.sql;
+
+root@0f1ff6c058ba:/# mysql -uroot -pexample;
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 5
+Server version: 10.5.5-MariaDB-1:10.5.5+maria~focal mariadb.org binary distribution
+
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+MariaDB [(none)]> use high_project;
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
+Database changed
+MariaDB [high_project]> show tables;
++------------------------+
+| Tables_in_high_project |
++------------------------+
+| customers              |
+| employees              |
+| offices                |
+| orderdetails           |
+| orders                 |
+| payments               |
+| productlines           |
+| products               |
+| productvariants        |
++------------------------+
+9 rows in set (0.002 sec)
+
+
+3. Какие ситуации, вызывающие рост количества запросов, могут случаться на сервере? Мы рассмотрели не все.
+Может имеется ввиду различные атаки или боты отправляющие какие-либо данные
