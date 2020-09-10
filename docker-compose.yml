@@ -8,6 +8,8 @@ services:
     volumes:
       - ./src:/usr/share/nginx/html
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/nginx1.conf:/etc/nginx/nginx1.conf
+      - ./nginx/upstream.conf:/etc/nginx/upstream.conf
     depends_on:
       - php
   php:
@@ -34,3 +36,8 @@ services:
     volumes:
       - ./redis/redis.conf:/redis.conf
     command: [ "redis-server", "/redis.conf" ]
+  memcached:
+    image: memcached:latest
+    container_name: memcached
+    ports:
+      - 11211:11211
