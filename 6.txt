@@ -1,0 +1,32 @@
+1. Построить NGINX-балансировку между двумя виртуальными машинами. Доказать, что балансировка происходит.
+Балансировку настроить не удалось. Может вы скажете где ошибка
+
+2. Реализовать альтернативное хранение сессий в Memcached.
+Добавила Memcached, но выводит ошибки
+
+Warning: session_start(): Failed to write session lock: CONNECTION FAILURE in /usr/share/nginx/html/index.php on line 2
+
+Warning: session_start(): Failed to write session lock: CONNECTION FAILURE in /usr/share/nginx/html/index.php on line 2
+
+Warning: session_start(): Failed to write session lock: CONNECTION FAILURE in /usr/share/nginx/html/index.php on line 2
+
+Warning: session_start(): Failed to write session lock: CONNECTION FAILURE in /usr/share/nginx/html/index.php on line 2
+
+Warning: session_start(): Failed to write session lock: CONNECTION FAILURE in /usr/share/nginx/html/index.php on line 2
+
+Warning: session_start(): Failed to write session lock: SERVER HAS FAILED AND IS DISABLED UNTIL TIMED RETRY in /usr/share/nginx/html/index.php on line 2
+
+Warning: session_start(): Unable to clear session lock record in /usr/share/nginx/html/index.php on line 2
+
+Warning: session_start(): Failed to read session data: memcached (path: 172.19.0.4:11211) in /usr/share/nginx/html/index.php on line 2
+Array
+(
+    [0] => Array
+        (
+            [host] => 172.19.0.4
+            [port] => 11211
+            [type] => TCP
+        )
+
+)
+array(2) { ["favcolor"]=> string(5) "green" ["animal"]=> string(3) "cat" }
