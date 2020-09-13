@@ -1,6 +1,6 @@
 FROM php:7.4-fpm
 RUN apt-get update
-RUN docker-php-ext-install pdo pdo_mysql mysqli
+RUN docker-php-ext-install pdo pdo_mysql mysqli bcmath sockets
 
 RUN pecl install -o -f redis \
 &&  rm -rf /tmp/pear \
