@@ -1,22 +1,32 @@
 <?php
-$start = microtime(true);
+phpinfo ();
 
-$redis = new Redis();
-$redis->connect('172.19.0.1', 6379);
+require __DIR__ . '/vendor/autoload.php';
 
-if ($redis->get('customerName')) {
-    var_dump(345);
-    echo $redis->get('customerName');
-} else {
-    var_dump(123);
-    $link = mysqli_connect('172.19.0.3:3306', 'root', 'qwerty', 'high_project');
-    $sql = "select * from customers where contactFirstName='Tony'";
-    $result = mysqli_query($link, $sql);
-    while ($row = mysqli_fetch_array($result)) {
-        $redis->set('customerName', $row['customerName']);
-        echo $row['customerName'];
-    }
+use PhpAmqpLib\Connection\AMQPStreamConnection;
+use PhpAmqpLib\Exception\AMQPProtocolChannelException;
+use PhpAmqpLib\Message\AMQPMessage;
+
+try {
+    // соединяемся с RabbitMQ
+    $connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
+
+    // Создаем канал общения с очередью
+    $channel = $connection->channel();
+    $channel->queue_declare('Coffee', false, true, false, false);
+
+    // создаем сообщение
+    $msg = new AMQPMessage($_POST['type']);
+    // размещаем сообщение в очереди
+    $channel->basic_publish($msg, '', 'Coffee');
+
+    // закрываем соединения
+    $channel->close();
+    $connection->close();
 }
-
-$time = microtime(true) - $start;
-echo $time;
+catch (AMQPProtocolChannelException $e){
+    echo $e->getMessage();
+}
+catch (AMQPException $e){
+    echo $e->getMessage();
+}
